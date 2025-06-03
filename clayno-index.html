@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GIF Rotator</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      cursor: pointer;
+    }
+    img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div id="gif-container">
+    <img id="gif-display" src="" alt="Loading gif..." />
+  </div>
+
+  <script>
+    const gifContainer = document.getElementById("gif-container");
+    let gifUrls = [];
+    let currentIndex = 0;
+    let autoAdvanceTimer = null;
+    let preloadedImg = new Image();
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function preloadNextGif() {
+      const nextIndex = (currentIndex + 1) % gifUrls.length;
+      preloadedImg.src = gifUrls[nextIndex]; // allow browser to cache it
+    }
+
+    function showCurrentGif() {
+      const gifUrl = gifUrls[currentIndex];
+
+      const newImg = document.createElement("img");
+      newImg.src = gifUrl; // no timestamp to allow caching
+      newImg.alt = `GIF ${currentIndex + 1}`;
+      newImg.style.maxWidth = "90vw";
+      newImg.style.maxHeight = "90vh";
+      newImg.style.borderRadius = "12px";
+      newImg.style.boxShadow = "0 0 30px rgba(255,255,255,0.15)";
+
+      gifContainer.innerHTML = '';
+      gifContainer.appendChild(newImg);
+
+      console.log(`Now showing [${currentIndex}]: ${gifUrl}`);
+      preloadNextGif(); // preload upcoming gif
+    }
+
+    function advanceGif() {
+      currentIndex = (currentIndex + 1) % gifUrls.length;
+      showCurrentGif();
+    }
+
+    function startAutoAdvance() {
+      if (autoAdvanceTimer) clearInterval(autoAdvanceTimer);
+      autoAdvanceTimer = setInterval(advanceGif, 10000);
+    }
+
+    fetch('gifs.json')
+      .then(res => res.json())
+      .then(data => {
+        gifUrls = shuffle(data);
+        showCurrentGif();
+        startAutoAdvance();
+
+        document.body.addEventListener('click', () => {
+          console.log("User clicked — advancing gif.");
+          advanceGif();
+          startAutoAdvance();
+        });
+      })
+      .catch(err => console.error("Error loading gifs.json:", err));
+  </script>
+</body>
+</html>
